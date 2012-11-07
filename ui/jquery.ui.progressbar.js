@@ -24,7 +24,6 @@ $.widget( "ui.progressbar", {
 	min: 0,
 
 	_create: function() {
-		var val = this._value();
 		this.element
 			.addClass( "ui-progressbar ui-widget ui-widget-content ui-corner-all" )
 			.attr({
@@ -74,18 +73,21 @@ $.widget( "ui.progressbar", {
 
 	_value: function() {
 		var val = this.options.value;
+		if( val === false ) {
+			this.indeterminate = true;
+		} else {
+			this.indeterminate = false;
+		}
 		// normalize invalid value
 		if ( typeof val !== "number" && val !== false ) {
 			val = 0;
-		} else if( val === false ) {
-			val = NaN;
 		}
-		return Math.min( this.options.max, Math.max( this.min, val ) );
+		return this.indeterminate ? false : Math.min( this.options.max, Math.max( this.min, val ) );
 	},
 
 	_percentage: function() {
 		var val = this._value();
-		return isNaN( val ) ? 100 : 100 * val / this.options.max;
+		return this.indeterminate ? 100 : 100 * val / this.options.max;
 	},
 
 	_refreshValue: function() {
@@ -93,19 +95,19 @@ $.widget( "ui.progressbar", {
 			percentage = this._percentage(),
 			overlay = this.valueDiv.children().eq( 0 );
 
-		overlay.toggleClass( "ui-progressbar-overlay", isNaN( value ) );
-		this.valueDiv.toggleClass( "ui-progressbar-indeterminate", isNaN( value ) );
+		overlay.toggleClass( "ui-progressbar-overlay", this.indeterminate );
+		this.valueDiv.toggleClass( "ui-progressbar-indeterminate", this.indeterminate );
 
-		if ( this.oldValue !== value && ( !isNaN( this.oldValue ) || !isNaN( value ) ) ) {
+		if ( this.oldValue !== value ) {
 			this.oldValue = value;
 			this._trigger( "change" );
 		}
 
 		this.valueDiv
-			.toggle( isNaN( value ) || value > this.min )
+			.toggle( this.indeterminate || value > this.min )
 			.toggleClass( "ui-corner-right", value === this.options.max )
 			.width( percentage.toFixed(0) + "%" );
-		if ( isNaN( value ) ) {
+		if ( this.indeterminate ) {
 			this.element.removeAttr( "aria-valuenow" );
 		} else {
 			this.element.attr( "aria-valuenow", value );
